@@ -314,16 +314,23 @@ class PayPalCaptureRequest(BaseModel):
     order_id: str = Field(min_length=8, max_length=64, pattern=r"^[A-Z0-9-]+$")
 
 
+FRONTEND_ORIGINS = {
+    "https://we-pay-iota.vercel.app/",   # apna exact Vercel URL
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+}
+
 app = FastAPI(title="WePay.ai API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],
+    allow_origins=list(FRONTEND_ORIGINS),
+    allow_origin_regex=r"https://we-pay.*\.vercel\.app",  # preview deployments ke liye
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
-
-FRONTEND_ORIGINS = {"http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"}
 
 
 class LedgerConnectionManager:
@@ -534,100 +541,327 @@ async def health() -> dict[str, str | bool]:
     return {"status": "ok", "service": "wepay-api", "live_voice_configured": bool(os.getenv("GEMINI_API_KEY", "").strip())}
 
 
+
 @app.websocket("/ws/ledger")
 async def ledger_socket(socket: WebSocket) -> None:
     origin = socket.headers.get("origin")
-    if origin and origin not in FRONTEND_ORIGINS:
-        await socket.close(code=1008, reason="Origin is not allowed")
+
+    # Reject unknown or missing origins.
+    if not origin or origin not in FRONTEND_ORIGINS:
+        logger.warning(
+            "WebSocket connection rejected: origin=%r",
+            origin,
+        )
+        await socket.close(
+            code=1008,
+            reason="Origin is not allowed",
+        )
         return
+
+    # Accept/register the connection through your manager.
     await ledger_manager.connect(socket)
+
     try:
         while True:
             message = await socket.receive_json()
+
             if not isinstance(message, dict):
-                await socket.send_json({"type": "error", "message": "Send a JSON object over the ledger socket."})
+                await socket.send_json({
+                    "type": "error",
+                    "message": (
+                        "Send a JSON object over the ledger socket."
+                    ),
+                })
                 continue
+
             operation = message.get("type")
             request_id = str(message.get("requestId", ""))[:80]
+
+            # Heartbeat
             if operation == "ping":
-                await socket.send_json({"type": "pong", "requestId": request_id})
+                await socket.send_json({
+                    "type": "pong",
+                    "requestId": request_id,
+                })
                 continue
+
+            # Refresh forex rates
             if operation == "forex.refresh":
-                base_currency = str(message.get("base", "USD")).upper()
+                base_currency = str(
+                    message.get("base", "USD")
+                ).upper()
+
                 if not re.fullmatch(r"[A-Z]{3}", base_currency):
-                    await socket.send_json({"type": "forex.error", "requestId": request_id, "message": "The reference currency must be a three-letter ISO code."})
+                    await socket.send_json({
+                        "type": "forex.error",
+                        "requestId": request_id,
+                        "message": (
+                            "The reference currency must be "
+                            "a three-letter ISO code."
+                        ),
+                    })
                     continue
+
                 try:
                     rates = await exchange_rates(base_currency)
-                    await ledger_manager.publish({"type": "forex.rates", "rates": rates})
+                    await ledger_manager.publish({
+                        "type": "forex.rates",
+                        "rates": rates,
+                    })
                 except HTTPException as exc:
-                    await socket.send_json({"type": "forex.error", "requestId": request_id, "message": str(exc.detail)})
+                    await socket.send_json({
+                        "type": "forex.error",
+                        "requestId": request_id,
+                        "message": str(exc.detail),
+                    })
                 continue
+
+            # Parse a text expense
             if operation == "expense.parse":
                 text = message.get("text")
-                currency = str(message.get("currency", "USD")).upper()
-                if not isinstance(text, str) or not text.strip() or len(text) > 1000:
-                    await socket.send_json({"type": "expense.error", "requestId": request_id, "message": "Enter an expense description between 1 and 1000 characters."})
+                currency = str(
+                    message.get("currency", "USD")
+                ).upper()
+
+                if (
+                    not isinstance(text, str)
+                    or not text.strip()
+                    or len(text) > 1000
+                ):
+                    await socket.send_json({
+                        "type": "expense.error",
+                        "requestId": request_id,
+                        "message": (
+                            "Enter an expense description between "
+                            "1 and 1000 characters."
+                        ),
+                    })
                     continue
+
                 if not re.fullmatch(r"[A-Z]{3}", currency):
-                    await socket.send_json({"type": "expense.error", "requestId": request_id, "message": "Currency must be a three-letter code."})
+                    await socket.send_json({
+                        "type": "expense.error",
+                        "requestId": request_id,
+                        "message": (
+                            "Currency must be a three-letter code."
+                        ),
+                    })
                     continue
+
                 try:
-                    expense = parse_expense_text(text, default_currency=currency)
-                    expense = await convert_expense_currency(expense, currency)
+                    expense = parse_expense_text(
+                        text,
+                        default_currency=currency,
+                    )
+                    expense = await convert_expense_currency(
+                        expense,
+                        currency,
+                    )
                     signals = await analyze_expense(expense)
-                    parsed = ParseVoiceResponse(**expense.model_dump(), liabilities=calculate_liabilities(expense), **signals)
-                    await socket.send_json({"type": "expense.parsed", "requestId": request_id, "expense": parsed.model_dump(mode="json")})
+
+                    parsed = ParseVoiceResponse(
+                        **expense.model_dump(),
+                        liabilities=calculate_liabilities(expense),
+                        **signals,
+                    )
+
+                    await socket.send_json({
+                        "type": "expense.parsed",
+                        "requestId": request_id,
+                        "expense": parsed.model_dump(mode="json"),
+                    })
+
                 except HTTPException as exc:
-                    await socket.send_json({"type": "expense.error", "requestId": request_id, "message": str(exc.detail)})
+                    await socket.send_json({
+                        "type": "expense.error",
+                        "requestId": request_id,
+                        "message": str(exc.detail),
+                    })
                 except Exception:
-                    logger.exception("WebSocket expense parsing failed")
-                    await socket.send_json({"type": "expense.error", "requestId": request_id, "message": "We could not parse that expense. Please review the text and try again."})
+                    logger.exception(
+                        "WebSocket expense parsing failed"
+                    )
+                    await socket.send_json({
+                        "type": "expense.error",
+                        "requestId": request_id,
+                        "message": (
+                            "We could not parse that expense. "
+                            "Please review the text and try again."
+                        ),
+                    })
                 continue
+
+            # Process a voice expense
             if operation == "voice.process":
                 audio_base64 = message.get("audioBase64")
-                mime_type = str(message.get("mimeType", "")).split(";", 1)[0].lower()
-                currency = str(message.get("currency", "USD")).upper()
-                if not isinstance(audio_base64, str) or len(audio_base64) > 14_000_000:
-                    await socket.send_json({"type": "voice.error", "requestId": request_id, "message": "Audio must be a valid recording no larger than 10 MB."})
-                    continue
-                if mime_type not in SUPPORTED_AUDIO_MIME_TYPES:
-                    await socket.send_json({"type": "voice.error", "requestId": request_id, "message": "This browser audio format is not supported. Try recording again."})
-                    continue
-                if not re.fullmatch(r"[A-Z]{3}", currency):
-                    await socket.send_json({"type": "voice.error", "requestId": request_id, "message": "Currency must be a three-letter code."})
-                    continue
-                if not os.getenv("GEMINI_API_KEY", "").strip():
-                    await socket.send_json({"type": "voice.error", "requestId": request_id, "message": "Live voice is not configured. Add GEMINI_API_KEY to backend/.env and restart the API."})
-                    continue
-                try:
-                    audio_bytes = base64.b64decode(audio_base64, validate=True)
-                    if not audio_bytes or len(audio_bytes) > 10 * 1024 * 1024:
-                        raise ValueError("Audio payload size was invalid")
-                    gemini_client: httpx.AsyncClient = socket.app.state.gemini_client
-                    transcript = await transcribe_audio(audio_bytes, mime_type, gemini_client)
-                    extraction, parser_fallback = await extract_expense_with_llm(transcript, currency, gemini_client)
-                    expense = ExpensePayload(**extraction.model_dump())
-                    if not parser_fallback:
-                        expense = await convert_expense_currency(expense, currency)
-                    signals = await analyze_expense(expense) if not parser_fallback else {"fraud_risk": "LOW", "volatility_index": None, "hedging_advice": None, "hedging_hold_recommended": False}
-                    response = LiveVoiceResponse(**expense.model_dump(), liabilities=calculate_liabilities(expense), transcript=transcript, parserFallback=parser_fallback, **signals)
-                    await socket.send_json({"type": "voice.processed", "requestId": request_id, "result": response.model_dump(mode="json")})
-                except (ValueError, binascii.Error):
-                    await socket.send_json({"type": "voice.error", "requestId": request_id, "message": "The audio payload was invalid. Please record it again."})
-                except HTTPException as exc:
-                    await socket.send_json({"type": "voice.error", "requestId": request_id, "message": str(exc.detail)})
-                except Exception:
-                    logger.exception("WebSocket live voice processing failed")
-                    await socket.send_json({"type": "voice.error", "requestId": request_id, "message": "Could not transcribe this recording. Please try again or type the expense."})
-                continue
-            await socket.send_json({"type": "error", "requestId": request_id, "message": "Unsupported ledger socket operation."})
-    except WebSocketDisconnect:
-        await ledger_manager.disconnect(socket)
-    except Exception:
-        await ledger_manager.disconnect(socket)
-        logger.exception("Ledger WebSocket connection ended unexpectedly")
+                mime_type = str(
+                    message.get("mimeType", "")
+                ).split(";", 1)[0].lower()
+                currency = str(
+                    message.get("currency", "USD")
+                ).upper()
 
+                if (
+                    not isinstance(audio_base64, str)
+                    or not audio_base64
+                    or len(audio_base64) > 14_000_000
+                ):
+                    await socket.send_json({
+                        "type": "voice.error",
+                        "requestId": request_id,
+                        "message": (
+                            "Audio must be a valid recording "
+                            "no larger than 10 MB."
+                        ),
+                    })
+                    continue
+
+                if mime_type not in SUPPORTED_AUDIO_MIME_TYPES:
+                    await socket.send_json({
+                        "type": "voice.error",
+                        "requestId": request_id,
+                        "message": (
+                            "This browser audio format is not supported. "
+                            "Try recording again."
+                        ),
+                    })
+                    continue
+
+                if not re.fullmatch(r"[A-Z]{3}", currency):
+                    await socket.send_json({
+                        "type": "voice.error",
+                        "requestId": request_id,
+                        "message": (
+                            "Currency must be a three-letter code."
+                        ),
+                    })
+                    continue
+
+                if not os.getenv("GEMINI_API_KEY", "").strip():
+                    await socket.send_json({
+                        "type": "voice.error",
+                        "requestId": request_id,
+                        "message": (
+                            "Live voice is not configured. "
+                            "Add GEMINI_API_KEY to the backend "
+                            "environment variables."
+                        ),
+                    })
+                    continue
+
+                try:
+                    audio_bytes = base64.b64decode(
+                        audio_base64,
+                        validate=True,
+                    )
+
+                    if (
+                        not audio_bytes
+                        or len(audio_bytes) > 10 * 1024 * 1024
+                    ):
+                        raise ValueError(
+                            "Audio payload size was invalid"
+                        )
+
+                    gemini_client: httpx.AsyncClient = (
+                        socket.app.state.gemini_client
+                    )
+
+                    transcript = await transcribe_audio(
+                        audio_bytes,
+                        mime_type,
+                        gemini_client,
+                    )
+
+                    extraction, parser_fallback = (
+                        await extract_expense_with_llm(
+                            transcript,
+                            currency,
+                            gemini_client,
+                        )
+                    )
+
+                    expense = ExpensePayload(
+                        **extraction.model_dump()
+                    )
+
+                    if not parser_fallback:
+                        expense = await convert_expense_currency(
+                            expense,
+                            currency,
+                        )
+
+                    signals = (
+                        await analyze_expense(expense)
+                        if not parser_fallback
+                        else {
+                            "fraud_risk": "LOW",
+                            "volatility_index": None,
+                            "hedging_advice": None,
+                            "hedging_hold_recommended": False,
+                        }
+                    )
+
+                    response = LiveVoiceResponse(
+                        **expense.model_dump(),
+                        liabilities=calculate_liabilities(expense),
+                        transcript=transcript,
+                        parserFallback=parser_fallback,
+                        **signals,
+                    )
+
+                    await socket.send_json({
+                        "type": "voice.processed",
+                        "requestId": request_id,
+                        "result": response.model_dump(mode="json"),
+                    })
+
+                except (ValueError, binascii.Error):
+                    await socket.send_json({
+                        "type": "voice.error",
+                        "requestId": request_id,
+                        "message": (
+                            "The audio payload was invalid. "
+                            "Please record it again."
+                        ),
+                    })
+                except HTTPException as exc:
+                    await socket.send_json({
+                        "type": "voice.error",
+                        "requestId": request_id,
+                        "message": str(exc.detail),
+                    })
+                except Exception:
+                    logger.exception(
+                        "WebSocket live voice processing failed"
+                    )
+                    await socket.send_json({
+                        "type": "voice.error",
+                        "requestId": request_id,
+                        "message": (
+                            "Could not transcribe this recording. "
+                            "Please try again or type the expense."
+                        ),
+                    })
+                continue
+
+            # Unknown operation
+            await socket.send_json({
+                "type": "error",
+                "requestId": request_id,
+                "message": "Unsupported ledger socket operation.",
+            })
+
+    except WebSocketDisconnect:
+        logger.info("Ledger WebSocket disconnected")
+
+    except Exception:
+        logger.exception(
+            "Ledger WebSocket connection ended unexpectedly"
+        )
+
+    finally:
+        await ledger_manager.disconnect(socket)
 
 @app.get("/api/settings/defaults", response_model=UserSettingsPayload)
 async def settings_defaults() -> UserSettingsPayload:
