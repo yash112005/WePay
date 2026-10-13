@@ -36,3 +36,7 @@ INFO:     127.0.0.1:59497 - "WebSocket /ws/ledger" [accepted]
 INFO:     connection open
 INFO:     127.0.0.1:54593 - "WebSocket /ws/ledger" [accepted]
 INFO:     connection open
+INFO:     127.0.0.1:62498 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:64134 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open
