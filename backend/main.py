@@ -314,23 +314,33 @@ class PayPalCaptureRequest(BaseModel):
     order_id: str = Field(min_length=8, max_length=64, pattern=r"^[A-Z0-9-]+$")
 
 
+
 FRONTEND_ORIGINS = {
-    "https://we-pay-iota.vercel.app/",   # apna exact Vercel URL
+    "https://we-pay-iota.vercel.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
 }
 
-app = FastAPI(title="WePay.ai API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(
+    title="WePay.ai API",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(FRONTEND_ORIGINS),
-    allow_origin_regex=r"https://we-pay.*\.vercel\.app",  # preview deployments ke liye
+    allow_origin_regex=r"https://we-pay-[a-zA-Z0-9-]+\.vercel\.app",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_methods=[
+        "GET", "POST", "PUT", "PATCH",
+        "DELETE", "OPTIONS",
+    ],
     allow_headers=["Content-Type", "Authorization"],
 )
+
 
 
 class LedgerConnectionManager:
