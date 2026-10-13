@@ -1,0 +1,43 @@
+INFO:     127.0.0.1:52208 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52901 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57645 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58981 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59784 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60249 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60249 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60359 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56099 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60359 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56146 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56099 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56146 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59292 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58643 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53146 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61732 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49308 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60496 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59637 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53455 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54547 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60269 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62257 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60269 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53880 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62257 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53880 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64452 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59200 - "OPTIONS /api/parse-voice?target_currency=INR HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59200 - "POST /api/parse-voice?target_currency=INR HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54543 - "OPTIONS /api/create-paypal-order HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54543 - "POST /api/create-paypal-order HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:52092 - "POST /api/create-paypal-order HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:52092 - "POST /api/create-paypal-order HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:52092 - "POST /api/create-paypal-order HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:51648 - "POST /api/create-paypal-order HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:60965 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59407 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52158 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49672 - "GET /api/paypal/config-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59407 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52158 - "GET /api/exchange-rates?base=USD HTTP/1.1" 200 OK

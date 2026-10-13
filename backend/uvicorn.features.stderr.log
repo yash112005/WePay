@@ -1,0 +1,22 @@
+INFO:     Started server process [17164]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54259 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:57247 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:51683 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:58094 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:62905 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:61650 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:51453 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:50998 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:54015 - "WebSocket /ws/ledger" [accepted]
+INFO:     connection open

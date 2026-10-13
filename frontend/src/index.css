@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; font-synthesis: none; text-rendering: optimizeLegibility; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: #ffffff; }
+button, textarea, input, select { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+::selection { background: rgba(37,99,235,.16); }
+.elder-mode { --elder-scale: 1.2; }
+.elder-mode [class~="text-xs"], .elder-mode [class~="sm:text-xs"] { font-size: calc(0.75rem * var(--elder-scale)); }
+.elder-mode [class~="text-sm"] { font-size: calc(0.875rem * var(--elder-scale)); }
+.elder-mode [class~="sm:text-[15px]"] { font-size: calc(15px * var(--elder-scale)); }
+.elder-mode [class~="text-base"] { font-size: calc(1rem * var(--elder-scale)); }
+.elder-mode [class~="text-lg"], .elder-mode [class~="sm:text-lg"] { font-size: calc(1.125rem * var(--elder-scale)); }
+.elder-mode [class~="text-[11px]"] { font-size: calc(11px * 1.2); }
+.elder-mode [class~="text-[13px]"] { font-size: calc(13px * 1.2); }
+.elder-mode [class~="text-[17px]"] { font-size: calc(17px * 1.12); }
+.elder-mode [class~="text-[26px]"] { font-size: calc(26px * 1.12); }
+.elder-mode [class~="text-3xl"] { font-size: calc(1.875rem * 1.12); }
+.elder-mode [class~="sm:text-[40px]"] { font-size: calc(40px * 1.12); }
+.elder-mode [class~="sm:text-6xl"] { font-size: calc(3.75rem * 1.08); }
+.elder-mode [class~="lg:text-7xl"] { font-size: calc(4.5rem * 1.08); }
+.elder-mode p, .elder-mode label, .elder-mode article { line-height: 1.55; }
+.elder-mode button, .elder-mode input, .elder-mode textarea, .elder-mode select { min-height: 44px; }
+.elder-mode :focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
+.animate-fadeIn { animation: fadeIn .35s ease-out both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-slideIn { animation: slideIn .24s ease-out both; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
+.scrollbar-hidden { scrollbar-width: none; }
+.scrollbar-hidden::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+body { font-size: 16px; }
+
